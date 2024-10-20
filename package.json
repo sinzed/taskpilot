@@ -1,0 +1,44 @@
+{
+  "name": "taskpilot",
+  "version": "1.0.0",
+  "description": "automate any tasks",
+  "main": "src/server.js",
+  "author": "saeed zahedi",
+  "scripts": {
+    "test": "mocha -r ts-node/register  \"tests/**/*.test.ts\"",
+    "start": "npx tsc && node build/src/server.js",
+    "main": "npx tsc && node build/src/main.js",
+    "scrap": "npx tsc && node build/src/scrap.js",
+    "scrap-all": "npx tsc && node build/src/scrap-all.js",
+    "scrap-prepare": "npx tsc && node build/src/scrap-prepare.js",
+    "convert-link": "npx tsc && node build/src/convert-link.js",
+    "process": "npx tsc && node build/src/process.js",
+    "find-phrase": "npx tsc && node build/src/find-phrase.js",
+    "extract-video": ". ./setup-env.sh && npx tsc && node build/src/extract-video.js",
+    "extract-video-retry": "npx tsc && node build/src/extract-video.js retry",
+    "explain-fact": ". ./setup-env.sh && npx tsc && node build/src/explain-fact.js",
+    "main-dev": "dotenv -e .env.development && npx tsc && ndb node build/src/main.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@types/puppeteer": "^7.0.4",
+    "puppeteer": "^22.10.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-adblocker": "^2.13.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.10",
+    "@types/jest": "^29.5.8",
+    "@types/mocha": "^10.0.4",
+    "@types/node": "^20.9.0",
+    "chai": "^4.3.10",
+    "jest": "^29.7.0",
+    "mocha": "^10.2.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2",
+    "typings": "^2.1.1"
+  }
+
+}

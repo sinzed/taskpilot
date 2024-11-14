@@ -33,14 +33,15 @@ export class OpenAiBrowser {
         this.browserOpened = true;
         return this.browser;
     }
-    async solve(prompt: string): Promise<string> {
+
+    public async detectClickPlace() {
         await this.initIfNot();
         await this.login();
         await this.selectGPTEngine();
         await this.upload();
-        await this.typePrompt(prompt);
         return "imageSrc";
     }
+
     async generateContent(prompt: string): Promise<string> {
         await this.initIfNot();
 

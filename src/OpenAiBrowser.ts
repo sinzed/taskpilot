@@ -1,8 +1,10 @@
+import { ElementHandle } from "puppeteer";
 import { Browcore } from "./Browcore";
 import { HelperService } from "./HelperService";
+import path from "path";
 
 export class OpenAiBrowser {
-    alreadyLoggedIn: boolean = false;
+    alreadyLoggedIn: boolean = true;
     selectedEngine: boolean = false;
     currentNumber: number = 0;
     close() {
@@ -30,6 +32,14 @@ export class OpenAiBrowser {
 
         this.browserOpened = true;
         return this.browser;
+    }
+    async solve(prompt: string): Promise<string> {
+        await this.initIfNot();
+        await this.login();
+        await this.selectGPTEngine();
+        await this.upload();
+        await this.typePrompt(prompt);
+        return "imageSrc";
     }
     async generateContent(prompt: string): Promise<string> {
         await this.initIfNot();
@@ -65,11 +75,35 @@ export class OpenAiBrowser {
         // await HelperService.waitForTimeout(5000);
         console.log("clipboard text",clipboardText);
         await HelperService.waitForTimeout(40000);
-        // await browser.saveCookie();
         return clipboardText;
     }
+    public async upload(){
+        await HelperService.waitForTimeout(5000);
+        await this.browser.page.waitForSelector('#prompt-textarea');
+        const fileInputSelector = 'input[type="file"]'; // Adjust this selector if necessary
+        await this.browser.page.waitForSelector(fileInputSelector);
+    
+        console.log('Uploading file...');
+        const filePath = path.resolve(__dirname, './main_screen_screenshot.png');
+        console.log("file path",filePath);
+        // const filePath = './main_screen_screenshot.png';
+    
+        // Upload the file
+        const input = await this.browser.page.evaluateHandle(()=>{
+            return document.querySelector('input[type="file"]');
+
+        }) 
+        const inputElement = input.asElement() as unknown as ElementHandle<HTMLInputElement>;
+
+        if(inputElement){
+            console.log("input element found");
+            await inputElement?.uploadFile(filePath);
+        }
+        const fileInput = await this.browser.page.$(fileInputSelector);
+        await fileInput?.uploadFile(filePath);
+    }
     private async login() {
-        return true;
+        // return true;
         if(this.alreadyLoggedIn){
             return true;
         }
@@ -80,10 +114,13 @@ export class OpenAiBrowser {
 
         await this.browser.page.waitForSelector(loginBtnSelector);
         await this.browser.page.click(loginBtnSelector);
-        const socialBtn = "#root > div > main > section > div.login-container > div.social-section > button:nth-child(1)";
+        const socialBtn = "body > div > main > section > div.login-container > div.social-section > button:nth-child(1)";
         await this.browser.page.waitForSelector(socialBtn);
         await this.browser.page.click(socialBtn);
         this.alreadyLoggedIn = true;
+        await this.browser.saveCookie();
+        await HelperService.waitForTimeout(20000);
+
     }
 
     async makeShape(drawPrompt: string):Promise<string> {

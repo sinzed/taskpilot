@@ -3,8 +3,9 @@ import { OpenAiBrowser } from "./OpenAiBrowser";
 export class TaskManager {
     async run() {
         const openAiBrowser = new OpenAiBrowser();
-        const prompt = "Translate the following text to French: 'Hello, how are you?'";
-        const content = await openAiBrowser.generateContent(prompt);
+        const prompt = "How to open browser?";
+        const content = await openAiBrowser.solve(prompt);
+        // const content = await openAiBrowser.generateContent(prompt);
         console.log(content);
     }
 }

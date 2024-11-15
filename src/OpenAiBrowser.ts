@@ -34,11 +34,11 @@ export class OpenAiBrowser {
         return this.browser;
     }
 
-    public async detectClickPlace() {
+    public async uploadScreenshot(screenshotPath: string) {
         await this.initIfNot();
         await this.login();
         await this.selectGPTEngine();
-        await this.upload();
+        await this.upload(screenshotPath);
         return "imageSrc";
     }
 
@@ -78,14 +78,14 @@ export class OpenAiBrowser {
         await HelperService.waitForTimeout(40000);
         return clipboardText;
     }
-    public async upload(){
+    public async upload(relativeFilePath:string){
         await HelperService.waitForTimeout(5000);
         await this.browser.page.waitForSelector('#prompt-textarea');
         const fileInputSelector = 'input[type="file"]'; // Adjust this selector if necessary
         await this.browser.page.waitForSelector(fileInputSelector);
     
         console.log('Uploading file...');
-        const filePath = path.resolve(__dirname, './main_screen_screenshot.png');
+        const filePath = path.resolve(__dirname, relativeFilePath);
         console.log("file path",filePath);
         // const filePath = './main_screen_screenshot.png';
     

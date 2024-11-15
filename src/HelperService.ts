@@ -73,7 +73,7 @@ export class HelperService {
         // Truncate the hash to the first 10 characters
         return hash.digest('hex').substring(0, 10);
     }
-    static workingDirectory = "./data/videos"
+    static workingDirectory = "./data/grids"
 
     static getPhraseFolder(phrase: string) {
         const folder = HelperService.workingDirectory + "/" + phrase.trim().toLowerCase().replace(/ /g, "-");

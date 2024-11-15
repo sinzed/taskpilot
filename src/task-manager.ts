@@ -1,6 +1,7 @@
 import { GridService } from "./GridService";
 import { Step } from "./types/step";
 import { OpenAiBrowser } from "./OpenAiBrowser";
+import { HelperService } from "./HelperService";
 
 export class TaskManager {
     openAiBrowser = new OpenAiBrowser();
@@ -19,10 +20,13 @@ export class TaskManager {
         }
     }
     findClickPosition(step: Step) {
+        step.gridJsonPath = HelperService.workingDirectory + `${step.screenshotPath}.json`;
         this.gridService.createGrids(step);
     }
     async solve(prompt: string): Promise<Array<Step>> {
-        await this.openAiBrowser.detectClickPlace();
+        const screenshotPath = "./data/grids/screenshot.png"
+        await this.gridService.takeScreenshotIfNotExist(screenshotPath)
+        await this.openAiBrowser.uploadScreenshot(screenshotPath);
         const completePrompt = 
         `our goal is to use AI to achieve a task in different steps
         the taks is: "${prompt}"
@@ -41,4 +45,5 @@ export class TaskManager {
 
         return JSON.parse(result);
     }
+
 }

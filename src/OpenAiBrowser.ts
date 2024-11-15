@@ -66,7 +66,7 @@ export class OpenAiBrowser {
         const copyBtnSelector = "pre button"
         await this.browser.page.waitForSelector(copyBtnSelector,{timeout: 120000});
         const copyBtn = await this.browser.page.$(copyBtnSelector);
-        await HelperService.waitForTimeout(40000);
+        await HelperService.waitForTimeout(10000);
         console.log("clicking copy button");
         await copyBtn?.click();
         const clipboardText = await this.browser.page.evaluate(async () => {
@@ -75,7 +75,7 @@ export class OpenAiBrowser {
         
         // await HelperService.waitForTimeout(5000);
         console.log("clipboard text",clipboardText);
-        await HelperService.waitForTimeout(40000);
+        await HelperService.waitForTimeout(10000);
         return clipboardText;
     }
     public async upload(relativeFilePath:string){
@@ -96,12 +96,12 @@ export class OpenAiBrowser {
         }) 
         const inputElement = input.asElement() as unknown as ElementHandle<HTMLInputElement>;
 
-        if(inputElement){
-            console.log("input element found");
-            await inputElement?.uploadFile(filePath);
-        }
+        // if(inputElement){
+        //     console.log("input element found");
+        //     await inputElement?.uploadFile(relativeFilePath);
+        // }
         const fileInput = await this.browser.page.$(fileInputSelector);
-        await fileInput?.uploadFile(filePath);
+        await fileInput?.uploadFile(relativeFilePath);
     }
     private async login() {
         // return true;

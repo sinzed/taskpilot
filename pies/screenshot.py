@@ -33,7 +33,8 @@ def calculate_bounding_box(cells_coordinates):
     min_y1 = min(y1_list)
     max_x2 = max(x2_list)
     max_y2 = max(y2_list)
-
+    if(max_x2> 1920):
+        max_x2 = 1920
     return (min_x1, min_y1, max_x2, max_y2)
 
 def crop_image(image, bounding_box):

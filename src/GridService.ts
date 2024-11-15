@@ -1,30 +1,25 @@
 import { exec } from "child_process";
 import { Step } from "./types/step";
 import { HelperService } from "./HelperService";
+import { ScreenShotOptions } from "./types/screenshot-options";
 
 export class GridService {
-  takeScreenshotIfNotExist(
-    screenshotPath: string,
-    cellsToExtract?: [],
-    inputJsonPath?: string,
-    inputScreenshotPath?: string,
-    outputJsonPath: string = HelperService.workingDirectory + 'output.json',
-    outputGriddedPath: string = HelperService.workingDirectory + 'gridded.png',
-    gridSize: number = 10
+  async takeScreenshotIfNotExist(
+    screenShotOptions: ScreenShotOptions
   ) {
     const args: string[] = [];
-    if (cellsToExtract) {
-      args.push(`--cells ${cellsToExtract?.join(" ")}`)
+    if (screenShotOptions.cellsToExtract) {
+      args.push(`--cells ${screenShotOptions.cellsToExtract?.join(" ")}`)
     }
-    if (inputScreenshotPath) {
-      args.push(`--input_image ${inputScreenshotPath}`)
+    if (screenShotOptions.inputScreenshotPath) {
+      args.push(`--input_image ${screenShotOptions.inputScreenshotPath}`)
     }
 
-    if (inputJsonPath) { args.push(`--input_json ${inputJsonPath}`) }
-    args.push(`--output_json ${outputJsonPath}`)
-    args.push(`--output_image ${screenshotPath}`)
-    args.push(`--output_gridded_image ${outputGriddedPath}`)
-    args.push(`--grid_size ${gridSize}`);
+    if (screenShotOptions.inputJsonPath) { args.push(`--input_json ${screenShotOptions.inputJsonPath}`) }
+    args.push(`--output_json ${screenShotOptions.outputJsonPath}`)
+    args.push(`--output_image ${screenShotOptions.screenshotPath}`)
+    args.push(`--output_gridded_image ${screenShotOptions.outputGriddedPath}`)
+    args.push(`--grid_size ${screenShotOptions.gridSize}`);
     const cmd = `python3 ./pies/screenshot.py ` + args.join(" ");
     console.log(cmd);
     return new Promise((resolve, reject) => {

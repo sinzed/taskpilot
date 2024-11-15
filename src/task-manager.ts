@@ -8,10 +8,17 @@ export class TaskManager {
     gridService = new GridService();
     async run() {
         const prompt = "please open browser";
+        await this.prepareWorkingDirectory();
         const content = await this.solve(prompt);
         await this.perform(content);
         // const content = await openAiBrowser.generateContent(prompt);
         console.log(content);
+    }
+    async prepareWorkingDirectory() {
+        HelperService.workingDirectory = "./data/grids/";
+        if(!HelperService.directoryExists(HelperService.workingDirectory)){
+            HelperService.createDirectory(HelperService.workingDirectory);
+        }
     }
     perform(content: Step[]) {
         const step = content[0];
@@ -24,7 +31,7 @@ export class TaskManager {
         this.gridService.createGrids(step);
     }
     async solve(prompt: string): Promise<Array<Step>> {
-        const screenshotPath = "./data/grids/screenshot.png"
+        const screenshotPath = HelperService.workingDirectory+"screenshot.png"
         await this.gridService.takeScreenshotIfNotExist(screenshotPath)
         await this.openAiBrowser.uploadScreenshot(screenshotPath);
         const completePrompt = 

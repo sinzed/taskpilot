@@ -3,6 +3,14 @@ import fs from 'fs'
 import crypto from 'crypto';
 
 export class HelperService {
+    static createDirectory(workingDirectory: string) {
+        if (!fs.existsSync(workingDirectory)) {
+            fs.mkdirSync(workingDirectory);
+        }
+    }
+    static directoryExists(workingDirectory: string) {
+        return fs.existsSync(workingDirectory);
+    }
     static slowDownText(sentence: string): string {
         const partText = sentence.split(" ").map(it=>it.trim()).filter(it=>it.length>0);
 

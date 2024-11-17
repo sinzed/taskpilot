@@ -66,7 +66,7 @@ export class OpenAiBrowser {
         const copyBtnSelector = "pre button"
         await this.browser.page.waitForSelector(copyBtnSelector,{timeout: 120000});
         const copyBtn = await this.browser.page.$(copyBtnSelector);
-        await HelperService.waitForTimeout(10000);
+        await HelperService.waitForTimeout(1000);
         console.log("clicking copy button");
         await copyBtn?.click();
         // const clipboardText = await this.browser.page.evaluate(async () => {

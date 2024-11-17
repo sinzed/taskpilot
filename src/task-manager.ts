@@ -9,7 +9,7 @@ export class TaskManager {
     openAiBrowser = new OpenAiBrowser();
     gridService = new GridService();
     async run() {
-        const prompt = "please open browser";
+        const prompt = "please open telegram";
         await this.prepareWorkingDirectory();
         const content = await this.resolve(prompt);
         // const content1 = await this.resolve(prompt);
@@ -48,8 +48,8 @@ export class TaskManager {
 
         const screenshotPath2 = HelperService.workingDirectory+"screenshot2.png"
         const screenshotGriddedPath2 = HelperService.workingDirectory+"screenshot_gridded2.png"
-        const cellsToTextract = this.getCellsToExtract(parsedJson.cells, screenShotOptions.outputJsonPath );
-        const nextScreenShotOptions: ScreenShotOptions = {
+        const cellsToTextract = this.getCellsToExtract(parsedJson.cells, screenShotOptions.outputJsonPath, screenShotOptions.gridSize );
+        const screenShotOptions2: ScreenShotOptions = {
             cellsToExtract: cellsToTextract,
             inputJsonPath: screenShotOptions.outputJsonPath,
             inputScreenshotPath: screenShotOptions.screenshotPath,
@@ -58,32 +58,33 @@ export class TaskManager {
             outputJsonPath: screenshotPath2+".json",
             outputGriddedPath: screenshotGriddedPath2
         }
-        const result2 = await this.takeScreenshotAndAsk(nextScreenShotOptions, screenshotGriddedPath2, prompt);
+        const result2 = await this.takeScreenshotAndAsk(screenShotOptions2, screenshotGriddedPath2, prompt);
         console.log(result2);
 
         const parsedJson2 :{cells: number[]} = JSON.parse(result2);
-        const cellsToTextract2 = this.getCellsToExtract(parsedJson2.cells, nextScreenShotOptions.outputJsonPath );
-        const nextScreenShotOptions2: ScreenShotOptions = {
+        const cellsToTextract2 = this.getCellsToExtract(parsedJson2.cells, screenShotOptions2.outputJsonPath, screenShotOptions2.gridSize );
+        const screenShotOptions3: ScreenShotOptions = {
             cellsToExtract: cellsToTextract2,
-            inputJsonPath: nextScreenShotOptions.outputJsonPath,
-            inputScreenshotPath: nextScreenShotOptions.screenshotPath,
+            inputJsonPath: screenShotOptions2.outputJsonPath,
+            inputScreenshotPath: screenShotOptions2.screenshotPath,
             screenshotPath: HelperService.workingDirectory+"screenshot3.png",
             gridSize: 5,
             outputJsonPath: HelperService.workingDirectory+"screenshot3.png.json",
             outputGriddedPath: HelperService.workingDirectory+"screenshot_gridded3.png"
         }
-        const result3 = await this.takeScreenshotAndAsk(nextScreenShotOptions2, HelperService.workingDirectory+"screenshot_gridded3.png", prompt);
+        const result3 = await this.takeScreenshotAndAsk(screenShotOptions3, HelperService.workingDirectory+"screenshot_gridded3.png", prompt);
         console.log(result3);
 
         return true;
     }
-    getCellsToExtract(cells: number[], cellsJsonpath: string): number[] {
+    getCellsToExtract(cells: number[], cellsJsonpath: string, cols: number): number[] {
         const jsonText = fs.readFileSync(cellsJsonpath);
         const grid = JSON.parse(jsonText.toString());
         const cellsToExtract: number[] = [];
         // extract all neighbours to cells
         cells.forEach((cell) => {
-            const neighbours = this.getNeighbours(cell, grid);
+            const neighbours = this.getNeighbours(cell, grid, cols);
+            console.log("neighbours",neighbours);
             console.log(neighbours);
             cellsToExtract.push(cell);
             neighbours.forEach((neighbour) => {
@@ -94,10 +95,9 @@ export class TaskManager {
         });
         return cellsToExtract;
     }
-    getNeighbours(cell: number, grid: Cell[]): number[] {
+    getNeighbours(cell: number, grid: Cell[], cols: number): number[] {
         const neighbours: number[] = [];
         const totalCells = grid.length;
-        const cols = 10; // Number of columns in the grid
         const rows = Math.ceil(totalCells / cols); // Number of rows in the grid
     
         // Helper function to get row and column from cell number
@@ -151,9 +151,10 @@ export class TaskManager {
         const completePrompt = `   our goal is to use AI to achieve a task
             the taks is: "${prompt}"
             in each step I will provide a screenshot and ask you for the cells we should click on
-            now please write the cells we should click on in the following format:
+            now please, look very carefully at the image the desktop screenshot
+             find the cells we should click on in the following format: 
             {
-                cells: [1, 2, 3, 4,...]
+                cells: [1, 2, 3, 4,...] ( the number of cell is written in white on the cell)
             }
             after clicking on the right place I will ask you for the next step
             the desktop screenshot of the current status has been attached 

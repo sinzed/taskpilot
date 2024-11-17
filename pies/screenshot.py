@@ -200,14 +200,6 @@ def main(args):
         print(f"Error: {e}")
         sys.exit(1)
 
-    # Save extracted cells to JSON
-    if args.output_json:
-        save_cells(extracted_cells, args.output_json)
-    else:
-        # If no output_json provided, save to 'extracted_cells.json'
-        default_output_json = 'extracted_cells.json'
-        save_cells(extracted_cells, default_output_json)
-
     # Retrieve coordinates of the cells to extract
     cells_coordinates = []
     for cell in extracted_cells:
@@ -234,14 +226,32 @@ def main(args):
         cropped_image.save(default_cropped_image)
         print(f"Cropped image saved to '{default_cropped_image}'")
 
+    # Generate new cells based on the grid over the cropped image
+    cropped_width, cropped_height = cropped_image.size
+    grid_size = args.grid_size
+
+    new_cells = generate_default_cells(cropped_width, cropped_height, grid_size=grid_size)
+    print(f"Generated new cell data for cropped image with grid size {grid_size}x{grid_size}")
+
+    # Save the new cells to JSON
+    if args.output_json:
+        save_cells(new_cells, args.output_json)
+        print(f"New cell data saved to '{args.output_json}'")
+    else:
+        default_output_json = 'extracted_cells.json'
+        save_cells(new_cells, default_output_json)
+        print(f"New cell data saved to '{default_output_json}'")
+
     # Create a gridded image
     if args.output_gridded_image:
         gridded_image_path = args.output_gridded_image
     else:
         gridded_image_path = 'cropped_gridded.png'
 
+    # Draw grid on the cropped image and save it
     gridded_image = cropped_image.copy()
-    draw_grid(gridded_image, args.grid_size, gridded_image_path)
+    draw_grid(gridded_image, grid_size, gridded_image_path)
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(

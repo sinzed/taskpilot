@@ -69,13 +69,26 @@ export class OpenAiBrowser {
         await HelperService.waitForTimeout(10000);
         console.log("clicking copy button");
         await copyBtn?.click();
-        const clipboardText = await this.browser.page.evaluate(async () => {
-            return navigator.clipboard.readText();
-        });
+        // const clipboardText = await this.browser.page.evaluate(async () => {
+        //     return navigator.clipboard.readText();
+        // });
+
+        let clipboardText = await this.browser.page.evaluate(() => {
+            const pres = document.querySelectorAll('pre');
+            // get latest pre
+            const pre = pres[pres.length - 1];
+            return pre ? pre.innerText : null;
+        }) ?? "not found";
+        
         
         // await HelperService.waitForTimeout(5000);
         console.log("clipboard text",clipboardText);
-        await HelperService.waitForTimeout(10000);
+        // json
+        // Copied!
+        clipboardText = clipboardText?.replace("json", "");
+        clipboardText = clipboardText?.replace("Copied!", "");
+        clipboardText = clipboardText?.replace("Copy code", "");
+        await HelperService.waitForTimeout(5000);
         return clipboardText;
     }
     public async upload(relativeFilePath:string){

@@ -4,6 +4,7 @@ import { OpenAiBrowser } from "./OpenAiBrowser";
 import { HelperService } from "./HelperService";
 import { ScreenShotOptions } from "./types/screenshot-options";
 import fs from "fs";
+import { Cell } from "./types/Cell";
 export class TaskManager {
     openAiBrowser = new OpenAiBrowser();
     gridService = new GridService();
@@ -42,7 +43,9 @@ export class TaskManager {
             outputGriddedPath: screenshotGriddedPath
         }
         const result = await this.takeScreenshotAndAsk(screenShotOptions, screenshotGriddedPath, prompt);
+        console.log(result);  
         const parsedJson :{cells: number[]} = JSON.parse(result);
+
         const screenshotPath2 = HelperService.workingDirectory+"screenshot2.png"
         const screenshotGriddedPath2 = HelperService.workingDirectory+"screenshot_gridded2.png"
         const cellsToTextract = this.getCellsToExtract(parsedJson.cells, screenShotOptions.outputJsonPath );
@@ -57,6 +60,21 @@ export class TaskManager {
         }
         const result2 = await this.takeScreenshotAndAsk(nextScreenShotOptions, screenshotGriddedPath2, prompt);
         console.log(result2);
+
+        const parsedJson2 :{cells: number[]} = JSON.parse(result2);
+        const cellsToTextract2 = this.getCellsToExtract(parsedJson2.cells, nextScreenShotOptions.outputJsonPath );
+        const nextScreenShotOptions2: ScreenShotOptions = {
+            cellsToExtract: cellsToTextract2,
+            inputJsonPath: nextScreenShotOptions.outputJsonPath,
+            inputScreenshotPath: nextScreenShotOptions.screenshotPath,
+            screenshotPath: HelperService.workingDirectory+"screenshot3.png",
+            gridSize: 5,
+            outputJsonPath: HelperService.workingDirectory+"screenshot3.png.json",
+            outputGriddedPath: HelperService.workingDirectory+"screenshot_gridded3.png"
+        }
+        const result3 = await this.takeScreenshotAndAsk(nextScreenShotOptions2, HelperService.workingDirectory+"screenshot_gridded3.png", prompt);
+        console.log(result3);
+
         return true;
     }
     getCellsToExtract(cells: number[], cellsJsonpath: string): number[] {
@@ -76,22 +94,54 @@ export class TaskManager {
         });
         return cellsToExtract;
     }
-    getNeighbours(cell: number, grid: any) {
+    getNeighbours(cell: number, grid: Cell[]): number[] {
         const neighbours: number[] = [];
-        const row = Math.floor(cell/grid.length);
-        const col = cell%grid.length;
-        if(row > 0){
-            neighbours.push(grid[row-1][col]);
+        const totalCells = grid.length;
+        const cols = 10; // Number of columns in the grid
+        const rows = Math.ceil(totalCells / cols); // Number of rows in the grid
+    
+        // Helper function to get row and column from cell number
+        const getRowCol = (cellNumber: number): { row: number; col: number } | null => {
+            if (cellNumber < 1 || cellNumber > totalCells) return null;
+            const row = Math.floor((cellNumber - 1) / cols);
+            const col = (cellNumber - 1) % cols;
+            return { row, col };
+        };
+    
+        // Get the row and column of the target cell
+        const position = getRowCol(cell);
+        if (!position) return neighbours; // Invalid cell number
+    
+        const { row, col } = position;
+    
+        // Define the 8 possible directions (N, NE, E, SE, S, SW, W, NW)
+        const directions: Array<[number, number]> = [
+            [-1, 0],  // North
+            [-1, 1],  // Northeast
+            [0, 1],   // East
+            [1, 1],   // Southeast
+            [1, 0],   // South
+            [1, -1],  // Southwest
+            [0, -1],  // West
+            [-1, -1], // Northwest
+        ];
+    
+        // Iterate through each direction to find valid neighbors
+        for (const [dRow, dCol] of directions) {
+            const newRow = row + dRow;
+            const newCol = col + dCol;
+    
+            // Check if the new position is within grid bounds
+            if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+                const neighborCellNumber = newRow * cols + newCol + 1; // +1 because cell numbers start at 1
+                // Optional: Verify that the neighbor exists in the grid
+                const neighborExists = grid.some(c => c.cell_number === neighborCellNumber);
+                if (neighborExists) {
+                    neighbours.push(neighborCellNumber);
+                }
+            }
         }
-        if(row < grid.length-1){
-            neighbours.push(grid[row+1][col]);
-        }
-        if(col > 0){
-            neighbours.push(grid[row][col-1]);
-        }
-        if(col < grid.length-1){
-            neighbours.push(grid[row][col+1]);
-        }
+    
         return neighbours;
     }
 
@@ -137,7 +187,6 @@ export class TaskManager {
             the desktop screenshot of the current status has been attached 
         `;
         const result = await this.openAiBrowser.generateContent(completePrompt);
-
         return JSON.parse(result);
     }
 

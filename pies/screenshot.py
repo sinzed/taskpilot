@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageGrab
 import os
 import sys
 
+
 def load_cells(json_path):
     """Load cell data from a JSON file."""
     with open(json_path, 'r') as f:
@@ -33,7 +34,7 @@ def calculate_bounding_box(cells_coordinates):
     min_y1 = min(y1_list)
     max_x2 = max(x2_list)
     max_y2 = max(y2_list)
-    if(max_x2> 1920):
+    if(max_x2 > 1920):
         max_x2 = 1920
     return (min_x1, min_y1, max_x2, max_y2)
 
@@ -42,26 +43,51 @@ def crop_image(image, bounding_box):
     return image.crop(bounding_box)
 
 def draw_grid(image, grid_size, output_path):
-    """Draw a grid on the image and save it."""
-    draw = ImageDraw.Draw(image)
+    """Draw a grid on the image with a semi-transparent gray overlay for each cell and save it."""
+    # Ensure the image is in RGBA mode to support transparency
+    if image.mode != 'RGBA':
+        image = image.convert('RGBA')
+    
+    # Create an overlay image for the semi-transparent gray rectangles
+    overlay = Image.new('RGBA', image.size, (255, 255, 255, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    
     width, height = image.size
 
     x_spacing = width / grid_size
     y_spacing = height / grid_size
 
+    # Define the semi-transparent gray color
+    gray_overlay = (100, 100, 100, 150)  # RGBA: Gray with alpha=100 for transparency
+
+    # Draw semi-transparent gray rectangles for each grid cell
+    for row in range(grid_size):
+        for col in range(grid_size):
+            x1 = col * x_spacing
+            y1 = row * y_spacing
+            x2 = (col + 1) * x_spacing
+            y2 = (row + 1) * y_spacing
+            overlay_draw.rectangle([x1, y1, x2, y2], fill=gray_overlay)
+
+    # Composite the overlay with the original image
+    image = Image.alpha_composite(image, overlay)
+
+    # Now draw the grid lines on the composited image
+    draw = ImageDraw.Draw(image)
+    
     # Draw vertical grid lines
     for i in range(grid_size + 1):
         x = i * x_spacing
-        draw.line([(x, 0), (x, height)], fill='blue', width=2)
+        draw.line([(x, 0), (x, height)], fill='red', width=2)
 
     # Draw horizontal grid lines
     for i in range(grid_size + 1):
         y = i * y_spacing
-        draw.line([(0, y), (width, y)], fill='blue', width=2)
+        draw.line([(0, y), (width, y)], fill='red', width=2)
 
     # Optional: Draw numbers on each grid cell
     cell_number = 1
-    font_size = int(min(x_spacing, y_spacing) / 4)
+    font_size = int(min(x_spacing, y_spacing) / 2)
 
     try:
         # Try to use a TrueType font
@@ -95,8 +121,10 @@ def draw_grid(image, grid_size, output_path):
             draw.text((text_x, text_y), text, fill="white", font=font)
             cell_number += 1
 
+    # Save the gridded image
+    image = image.convert('RGB')  # Convert back to RGB if you don't need transparency in the saved image
     image.save(output_path)
-    print(f"Gridded image saved to '{output_path}'")
+    print(f"Gridded image with transparent overlays saved to '{output_path}'")
 
 def generate_default_cells(image_width, image_height, grid_size=5):
     """Generate default cell data for a grid covering the entire image."""
@@ -131,6 +159,8 @@ def main(args):
             print(f"Error: The input image file '{args.input_image}' does not exist.")
             sys.exit(1)
         image = Image.open(args.input_image)
+        overlay = Image.new('RGBA', image.size, (255, 255, 255, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
         print(f"Loaded input image from '{args.input_image}'")
     else:
         # Capture the entire screen

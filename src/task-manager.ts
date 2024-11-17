@@ -5,8 +5,9 @@ import { HelperService } from "./HelperService";
 import { ScreenShotOptions } from "./types/screenshot-options";
 import fs from "fs";
 import { Cell } from "./types/Cell";
+import { ClaudeBrowser } from "./ClaudeBrowser";
 export class TaskManager {
-    openAiBrowser = new OpenAiBrowser();
+    aiBrowser = new ClaudeBrowser();
     gridService = new GridService();
     async run() {
         const prompt = "please open telegram";
@@ -147,7 +148,7 @@ export class TaskManager {
 
     private async takeScreenshotAndAsk(screenShotOptions: ScreenShotOptions, screenshotGriddedPath: string, prompt: string):Promise<string> {
         await this.gridService.takeScreenshotIfNotExist(screenShotOptions);
-        await this.openAiBrowser.uploadScreenshot(screenshotGriddedPath);
+        await this.aiBrowser.uploadScreenshot(screenshotGriddedPath);
         const completePrompt = `   our goal is to use AI to achieve a task
             the taks is: "${prompt}"
             in each step I will provide a screenshot and ask you for the cells we should click on
@@ -158,8 +159,9 @@ export class TaskManager {
             }
             after clicking on the right place I will ask you for the next step
             the desktop screenshot of the current status has been attached 
+            can you please just write the json
         `;
-        const result = await this.openAiBrowser.generateContent(completePrompt);
+        const result = await this.aiBrowser.generateContent(completePrompt);
         return result;
     }
 
@@ -172,7 +174,7 @@ export class TaskManager {
             outputGriddedPath: screenshotPath
         }
         await this.gridService.takeScreenshotIfNotExist(screenShotOptions)
-        await this.openAiBrowser.uploadScreenshot(screenshotPath);
+        await this.aiBrowser.uploadScreenshot(screenshotPath);
         const completePrompt = 
         `our goal is to use AI to achieve a task in different steps
         the taks is: "${prompt}"
@@ -187,7 +189,7 @@ export class TaskManager {
         }
             the desktop screenshot of the current status has been attached 
         `;
-        const result = await this.openAiBrowser.generateContent(completePrompt);
+        const result = await this.aiBrowser.generateContent(completePrompt);
         return JSON.parse(result);
     }
 

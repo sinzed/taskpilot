@@ -78,12 +78,12 @@ def draw_grid(image, grid_size, output_path):
     # Draw vertical grid lines
     for i in range(grid_size + 1):
         x = i * x_spacing
-        draw.line([(x, 0), (x, height)], fill='red', width=2)
+        draw.line([(x, 0), (x, height)], fill='red', width=1)
 
     # Draw horizontal grid lines
     for i in range(grid_size + 1):
         y = i * y_spacing
-        draw.line([(0, y), (width, y)], fill='red', width=2)
+        draw.line([(0, y), (width, y)], fill='red', width=1)
 
     # Optional: Draw numbers on each grid cell
     cell_number = 1

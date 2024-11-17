@@ -60,7 +60,7 @@ export class ClaudeBrowser {
     
         console.log('Full Response Text:', responseText);
     
-        const jsonString = this.extractJson(responseText);
+        const jsonString = HelperService.extractJson(responseText);
     
         return jsonString??""
     
@@ -70,17 +70,10 @@ export class ClaudeBrowser {
         const validJsonStr = str.replace(/(\w+):/g, '"$1":');
         return validJsonStr;
     }
-    extractJson(text: string) {
-        const jsonRegex = /{[\s\S]*?}/; // Matches the first occurrence of { ... }
-        const match = text.match(jsonRegex);
-        if (match) {
-            return match[0];
-        }
-        return null;
-    }
+
     public async upload(relativeFilePath:string){
         await HelperService.waitForTimeout(5000);
-        await this.browser.page.waitForSelector('input[type="file"]');
+        await this.browser.page.waitForSelector('input[type="file"]', {timeout: 60000});
         const fileInputSelector = 'input[type="file"]'; // Adjust this selector if necessary
         await this.browser.page.waitForSelector(fileInputSelector);
     

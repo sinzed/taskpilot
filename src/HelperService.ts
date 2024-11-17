@@ -92,6 +92,15 @@ export class HelperService {
         return folder
       
     }
+    static     extractJson(text: string) {
+        const jsonRegex = /{[\s\S]*?}/; // Matches the first occurrence of { ... }
+        const match = text.match(jsonRegex);
+        if (match) {
+            return match[0].replace(/(\w+):/g, '"$1":');
+            ;
+        }
+        return null;
+    }
     static str1IncludeStr2Unsorted(str1:string, str2:string){
         console.log("comparing", str1, str2)
         const str2Array = str2.split(" ").map(it=>it.trim()).filter(it=>it.length>0)

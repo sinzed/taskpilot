@@ -6,17 +6,16 @@ import { ScreenShotOptions } from "./types/screenshot-options";
 import fs from "fs";
 import { Cell } from "./types/Cell";
 import { ClaudeBrowser } from "./ClaudeBrowser";
+
 export class TaskManager {
+    // aiBrowser = new OpenAiBrowser();
     aiBrowser = new ClaudeBrowser();
     gridService = new GridService();
     async run() {
-        const prompt = "please open telegram";
+        const prompt = "click on microsoft teams";
         await this.prepareWorkingDirectory();
-        const content = await this.resolve(prompt);
-        // const content1 = await this.resolve(prompt);
-        // await this.perform();
-        // const content = await openAiBrowser.generateContent(prompt);
-        console.log(content);
+        const response = await this.resolve(prompt);
+        // console.log(content);
     }
     async prepareWorkingDirectory() {
         HelperService.workingDirectory = "./data/grids/";
@@ -34,7 +33,7 @@ export class TaskManager {
         step.gridJsonPath = HelperService.workingDirectory + `${step.screenshotPath}.json`;
         this.gridService.createGrids(step);
     }
-    async resolve(prompt: string): Promise<boolean> {
+    async resolve(prompt: string): Promise<{x: number, y:number}> {
         const screenshotPath = HelperService.workingDirectory+"screenshot.png"
         const screenshotGriddedPath = HelperService.workingDirectory+"screenshot_gridded.png"
         const screenShotOptions: ScreenShotOptions = {
@@ -55,29 +54,53 @@ export class TaskManager {
             inputJsonPath: screenShotOptions.outputJsonPath,
             inputScreenshotPath: screenShotOptions.screenshotPath,
             screenshotPath: screenshotPath2,
-            gridSize: 5,
+            gridSize: 6,
             outputJsonPath: screenshotPath2+".json",
             outputGriddedPath: screenshotGriddedPath2
         }
         const result2 = await this.takeScreenshotAndAsk(screenShotOptions2, screenshotGriddedPath2, prompt);
         console.log(result2);
+        const parsedJson2 :{cells: number[]} = JSON.parse(result);
+        const clickPosition = this.getClickPositionByCell(parsedJson, screenShotOptions.outputJsonPath, parsedJson2, screenShotOptions2.outputJsonPath );
+        await this.thirdDetect(result2, screenShotOptions2, prompt);
 
-        const parsedJson2 :{cells: number[]} = JSON.parse(result2);
-        const cellsToTextract2 = this.getCellsToExtract(parsedJson2.cells, screenShotOptions2.outputJsonPath, screenShotOptions2.gridSize );
+        return clickPosition;
+    }
+    getClickPositionByCell(response: {cells: number[]}, cellsPath1: string, response2: {cells:number[]}, cellsPath2:string): {x: number, y: number} {
+        const jsonText = fs.readFileSync(cellsPath1);
+        const grid:Cell[] = JSON.parse(jsonText.toString());
+        const jsonText2 = fs.readFileSync(cellsPath2);
+        const grid2:Cell[] = JSON.parse(jsonText2.toString());
+        const cells = response.cells;
+        const cells2 = response2.cells;
+        const cell1 = cells[0];
+        const cell2 = cells2[0];
+        const cell1Data = grid.find((cell: Cell) => cell.cell_number === cell1);
+        const cell2Data = grid2.find((cell: Cell) => cell.cell_number === cell2);
+        const cell1X1 = cell1Data?.coordinates.x1 ?? 0;
+        const cell1X2 = cell2Data?.coordinates.x2 ?? 0;
+        const cell1Y1 = cell1Data?.coordinates.y1 ?? 0;
+        const cell1Y2 = cell2Data?.coordinates.y2 ?? 0;
+        const x = (cell1X1 + cell1X2) / 2;
+        const y = (cell1Y1 + cell1Y2) / 2;
+        return {x, y};
+
+    }
+    private async thirdDetect(result2: string, screenShotOptions2: ScreenShotOptions, prompt: string) {
+        const parsedJson2: { cells: number[]; } = JSON.parse(result2);
+        const cellsToTextract2 = this.getCellsToExtract(parsedJson2.cells, screenShotOptions2.outputJsonPath, screenShotOptions2.gridSize);
         const screenShotOptions3: ScreenShotOptions = {
             cellsToExtract: cellsToTextract2,
             inputJsonPath: screenShotOptions2.outputJsonPath,
             inputScreenshotPath: screenShotOptions2.screenshotPath,
-            screenshotPath: HelperService.workingDirectory+"screenshot3.png",
-            gridSize: 5,
-            outputJsonPath: HelperService.workingDirectory+"screenshot3.png.json",
-            outputGriddedPath: HelperService.workingDirectory+"screenshot_gridded3.png"
-        }
-        const result3 = await this.takeScreenshotAndAsk(screenShotOptions3, HelperService.workingDirectory+"screenshot_gridded3.png", prompt);
-        console.log(result3);
-
-        return true;
+            screenshotPath: HelperService.workingDirectory + "screenshot3.png",
+            gridSize: 3,
+            outputJsonPath: HelperService.workingDirectory + "screenshot3.png.json",
+            outputGriddedPath: HelperService.workingDirectory + "screenshot_gridded3.png"
+        };
+        const result3 = await this.takeScreenshotAndAsk(screenShotOptions3, HelperService.workingDirectory + "screenshot_gridded3.png", prompt);
     }
+
     getCellsToExtract(cells: number[], cellsJsonpath: string, cols: number): number[] {
         const jsonText = fs.readFileSync(cellsJsonpath);
         const grid = JSON.parse(jsonText.toString());
@@ -149,20 +172,44 @@ export class TaskManager {
     private async takeScreenshotAndAsk(screenShotOptions: ScreenShotOptions, screenshotGriddedPath: string, prompt: string):Promise<string> {
         await this.gridService.takeScreenshotIfNotExist(screenShotOptions);
         await this.aiBrowser.uploadScreenshot(screenshotGriddedPath);
-        const completePrompt = `   our goal is to use AI to achieve a task
-            the taks is: "${prompt}"
-            in each step I will provide a screenshot and ask you for the cells we should click on
-            now please, look very carefully at the image the desktop screenshot
-             find the cells we should click on in the following format: 
-            {
-                cells: [1, 2, 3, 4,...] ( the number of cell is written in white on the cell)
-            }
-            after clicking on the right place I will ask you for the next step
-            the desktop screenshot of the current status has been attached 
-            can you please just write the json
-        `;
+        const completePrompt = this.getFindCellprompt(prompt);
         const result = await this.aiBrowser.generateContent(completePrompt);
         return result;
+    }
+
+    private getFindCellprompt(prompt: string) {
+        const promptTemplate = `"For the task: '${prompt}'
+                        IMPORTANT INSTRUCTIONS:
+
+                        Look EXTREMELY carefully at the entire grid
+                        Check if any icons/elements span across multiple cells
+                        Pay special attention to elements that cross cell boundaries
+                        Double-check all cells for any related content
+                        Include ALL cells that contain even a small part of the target element
+                        Review your answer twice before submitting to ensure no cells are missed
+
+                        Please provide ALL cell numbers that contain any part of the target element in this format:
+                        {
+                        cells: number[] (include every cell number that contains any portion of the target)
+                        }"
+                        Please just write the json
+                        This kind of detailed instruction would help ensure I examine the image more thoroughly and don't miss any cells that contain parts of the target element. The emphasis on thoroughness and multiple checks would help avoid incomplete answers.`
+
+        let promptTemplate2 = `we are going to do:  "${prompt}"
+            you task is to find the cells which are related to the task
+            forexample if the task is to click on an icon or clickspot
+            sometimes this click spot is related to multiple cells
+            when the task is related to multiple cells please write all the cell numbers
+            now please, look very carefully at the image the desktop screenshot
+             find the cells which are related to the task and write the cell numbers in the following format: 
+            {
+                cells: number[] (array of cell numbers) (cell numbers are located inside the cell)
+            }
+            the  screenshot has been attached 
+            can you please just write the json
+
+        `;
+        return promptTemplate
     }
 
     async solve(prompt: string): Promise<Array<Step>> {

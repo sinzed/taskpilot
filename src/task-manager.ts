@@ -8,11 +8,11 @@ import { Cell } from "./types/Cell";
 import { ClaudeBrowser } from "./ClaudeBrowser";
 
 export class TaskManager {
-    // aiBrowser = new OpenAiBrowser();
-    aiBrowser = new ClaudeBrowser();
+    aiBrowser = new OpenAiBrowser();
+    // aiBrowser = new ClaudeBrowser();
     gridService = new GridService();
     async run() {
-        const prompt = "click on microsoft teams";
+        const prompt = "click on microphone icon";
         await this.prepareWorkingDirectory();
         const response = await this.resolve(prompt);
         // console.log(content);
@@ -34,38 +34,47 @@ export class TaskManager {
         this.gridService.createGrids(step);
     }
     async resolve(prompt: string): Promise<{x: number, y:number}> {
-        const screenshotPath = HelperService.workingDirectory+"screenshot.png"
-        const screenshotGriddedPath = HelperService.workingDirectory+"screenshot_gridded.png"
-        const screenShotOptions: ScreenShotOptions = {
-            screenshotPath,
-            gridSize: 10,
-            outputJsonPath: screenshotPath+".json",
-            outputGriddedPath: screenshotGriddedPath
-        }
-        const result = await this.takeScreenshotAndAsk(screenShotOptions, screenshotGriddedPath, prompt);
-        console.log(result);  
-        const parsedJson :{cells: number[]} = JSON.parse(result);
+        const screenshotPathOutput = HelperService.workingDirectory + "screenshot.png";
+        const screenshotGriddedPath = HelperService.workingDirectory + "screenshot_gridded.png";
+        const {cellsToTextract, outputJsonPath} = await this.extractCells(prompt, screenshotPathOutput, screenshotGriddedPath);
 
-        const screenshotPath2 = HelperService.workingDirectory+"screenshot2.png"
-        const screenshotGriddedPath2 = HelperService.workingDirectory+"screenshot_gridded2.png"
-        const cellsToTextract = this.getCellsToExtract(parsedJson.cells, screenShotOptions.outputJsonPath, screenShotOptions.gridSize );
-        const screenShotOptions2: ScreenShotOptions = {
-            cellsToExtract: cellsToTextract,
-            inputJsonPath: screenShotOptions.outputJsonPath,
-            inputScreenshotPath: screenShotOptions.screenshotPath,
-            screenshotPath: screenshotPath2,
-            gridSize: 6,
-            outputJsonPath: screenshotPath2+".json",
-            outputGriddedPath: screenshotGriddedPath2
-        }
-        const result2 = await this.takeScreenshotAndAsk(screenShotOptions2, screenshotGriddedPath2, prompt);
-        console.log(result2);
-        const parsedJson2 :{cells: number[]} = JSON.parse(result);
-        const clickPosition = this.getClickPositionByCell(parsedJson, screenShotOptions.outputJsonPath, parsedJson2, screenShotOptions2.outputJsonPath );
-        await this.thirdDetect(result2, screenShotOptions2, prompt);
+        const screenshotPath1output = HelperService.workingDirectory + "screenshot1.png";
+        const screenshotGriddedPath1 = HelperService.workingDirectory + "screenshot_gridded1.png";
+        const result2 = await this.extractCells(prompt, screenshotPath1output, screenshotGriddedPath1,cellsToTextract, outputJsonPath,screenshotPathOutput);
 
-        return clickPosition;
+
+        const screenshotPath2output = HelperService.workingDirectory + "screenshot2.png";
+        const screenshotGriddedPath2 = HelperService.workingDirectory + "screenshot_gridded2.png";
+        const result3 = await this.extractCells(prompt, screenshotPath2output, screenshotGriddedPath2, result2.cellsToTextract, result2.outputJsonPath, screenshotPath1output);
+
+
+        const screenshotPath3 = HelperService.workingDirectory + "screenshot3.png";
+        const screenshotGriddedPath3 = HelperService.workingDirectory + "screenshot_gridded3.png";
+        const result4 = await this.extractCells(prompt, screenshotPath3, screenshotGriddedPath3, result3.cellsToTextract, result3.outputJsonPath, screenshotPath2output);
+
+
+
+        const screenshotPath4 = HelperService.workingDirectory + "screenshot4.png";
+        const screenshotGriddedPath4 = HelperService.workingDirectory + "screenshot_gridded4.png";
+        const result5 = await this.extractCells(prompt, screenshotPath4, screenshotGriddedPath4, result4.cellsToTextract, result4.outputJsonPath, screenshotPath3);
+        return {x:0, y:0};
     }
+    private async extractCells(prompt: string, screenshotPath:string, screenshotGriddedPath:string, extractedCells?: number[], inputJsonPath?:string, inputScreenShotPath?:string) {
+        const screenShotOptions: ScreenShotOptions = {
+            cellsToExtract: extractedCells,
+            inputJsonPath: inputJsonPath,
+            inputScreenshotPath: inputScreenShotPath,
+            screenshotPath,
+            gridSize: 4,
+            outputJsonPath: screenshotPath + ".json",
+            outputGriddedPath: screenshotGriddedPath
+        };
+        const parsedJson = await this.takeScreenshotAndAsk(screenShotOptions, screenshotGriddedPath, prompt);
+        const cellsToTextract = this.getCellsToExtract(parsedJson.cells, screenShotOptions.outputJsonPath, screenShotOptions.gridSize);
+        const outputJsonPath = screenShotOptions.outputJsonPath
+        return {cellsToTextract, outputJsonPath} ;
+    }
+
     getClickPositionByCell(response: {cells: number[]}, cellsPath1: string, response2: {cells:number[]}, cellsPath2:string): {x: number, y: number} {
         const jsonText = fs.readFileSync(cellsPath1);
         const grid:Cell[] = JSON.parse(jsonText.toString());
@@ -81,8 +90,8 @@ export class TaskManager {
         const cell1X2 = cell2Data?.coordinates.x2 ?? 0;
         const cell1Y1 = cell1Data?.coordinates.y1 ?? 0;
         const cell1Y2 = cell2Data?.coordinates.y2 ?? 0;
-        const x = (cell1X1 + cell1X2) / 2;
-        const y = (cell1Y1 + cell1Y2) / 2;
+        const x = (cell1X1 + cell1X1);
+        const y = (cell1Y1 + cell1Y1);
         return {x, y};
 
     }
@@ -99,6 +108,7 @@ export class TaskManager {
             outputGriddedPath: HelperService.workingDirectory + "screenshot_gridded3.png"
         };
         const result3 = await this.takeScreenshotAndAsk(screenShotOptions3, HelperService.workingDirectory + "screenshot_gridded3.png", prompt);
+        return {result3, screenShotOptions3};
     }
 
     getCellsToExtract(cells: number[], cellsJsonpath: string, cols: number): number[] {
@@ -169,12 +179,14 @@ export class TaskManager {
         return neighbours;
     }
 
-    private async takeScreenshotAndAsk(screenShotOptions: ScreenShotOptions, screenshotGriddedPath: string, prompt: string):Promise<string> {
+    private async takeScreenshotAndAsk(screenShotOptions: ScreenShotOptions, screenshotGriddedPath: string, prompt: string):Promise<{cells: number[]}> {
         await this.gridService.takeScreenshotIfNotExist(screenShotOptions);
         await this.aiBrowser.uploadScreenshot(screenshotGriddedPath);
         const completePrompt = this.getFindCellprompt(prompt);
         const result = await this.aiBrowser.generateContent(completePrompt);
-        return result;
+        const parsedJson :{cells: number[]} = JSON.parse(result);
+
+        return parsedJson;
     }
 
     private getFindCellprompt(prompt: string) {
